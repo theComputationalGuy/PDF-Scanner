@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ScanPDF">
+<link rel="manifest" href="manifest.json">
+<title>ScanPDF</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --gold: #c9974a;
+    --gold-light: #e8d5b0;
+    --gold-dim: #7a5a28;
+    --text: #e8e0d4;
+    --text-dim: #7a7060;
+    --text-mid: #b0a898;
+    --danger: #8b3a3a;
+    --success: #3a7a4a;
+    --radius: 6px;
+    --font-display: 'Playfair Display', serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  /* ── APP SHELL ── */
+  #app {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--gold-light);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--gold); }
+
+  .doc-count {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── VIEWS ── */
+  .view {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+    flex-direction: column;
+  }
+  .view.active { display: flex; }
+
+  /* ── NAV TABS ── */
+  nav {
+    display: flex;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  nav button {
+    flex: 1;
+    padding: 12px 8px 10px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+
+  nav button svg { width: 20px; height: 20px; }
+  nav button.active { color: var(--gold); }
+  nav button:active { opacity: 0.6; }
+
+  /* ── SCAN VIEW ── */
+  #scan-view {
+    position: relative;
+  }
+
+  #camera-container {
+    position: relative;
+    flex: 1;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #camera-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* scanning overlay */
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .scan-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 82%;
+    aspect-ratio: 0.707; /* A4 ratio */
+    border: 1.5px solid rgba(201, 151, 74, 0.5);
+  }
+
+  .scan-frame::before,
+  .scan-frame::after,
+  .scan-frame > .corner-br,
+  .scan-frame > .corner-bl {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-color: var(--gold);
+    border-style: solid;
+  }
+
+  .scan-frame::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .scan-frame::after  { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .scan-frame > .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  .scan-frame > .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+
+  .scan-line {
+    position: absolute;
+    left: 9%;
+    right: 9%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    animation: scan-anim 2.4s ease-in-out infinite;
+    opacity: 0;
+  }
+
+  .scanning .scan-line { opacity: 1; }
+
+  @keyframes scan-anim {
+    0%   { top: 9%; }
+    50%  { top: 91%; }
+    100% { top: 9%; }
+  }
+
+  /* camera controls */
+  .camera-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 16px 24px 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.85));
+  }
+
+  .btn-capture {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid var(--gold);
+    background: none;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.1s;
+  }
+
+  .btn-capture::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    background: var(--gold);
+    transition: transform 0.1s;
+  }
+
+  .btn-capture:active { transform: scale(0.92); }
+  .btn-capture:active::after { transform: scale(0.88); }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .btn-icon:active { background: rgba(255,255,255,0.12); }
+  .btn-icon svg { width: 20px; height: 20px; }
+
+  /* no camera state */
+  #no-camera {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex: 1;
+    padding: 40px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+
+  #no-camera svg { width: 48px; height: 48px; opacity: 0.3; }
+  #no-camera p { font-size: 12px; line-height: 1.6; }
+
+  .btn-primary {
+    padding: 12px 28px;
+    background: var(--gold);
+    color: #0a0a0a;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:active { opacity: 0.8; }
+
+  /* ── PREVIEW / OCR VIEW ── */
+  #preview-view {
+    background: var(--bg);
+  }
+
+  .preview-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .btn-back {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    background: none;
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-back svg { width: 16px; height: 16px; }
+
+  .preview-header h2 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 400;
+    flex: 1;
+    color: var(--gold-light);
+  }
+
+  .preview-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #preview-canvas-wrap {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #000;
+  }
+
+  #preview-canvas {
+    width: 100%;
+    display: block;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .ocr-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 11px;
+    color: var(--text-mid);
+  }
+
+  .ocr-status .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .progress-bar-wrap {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  #ocr-text-area {
+    width: 100%;
+    min-height: 120px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 12px;
+    resize: vertical;
+    outline: none;
+  }
+
+  #ocr-text-area:focus { border-color: var(--gold-dim); }
+
+  .doc-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #doc-name-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+  }
+
+  #doc-name-input:focus { border-color: var(--gold-dim); }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    padding-bottom: 8px;
+  }
+
+  .btn-secondary {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface2);
+    color: var(--text-mid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn-secondary:active { background: var(--border); }
+
+  .btn-save {
+    flex: 2;
+    padding: 12px;
+    background: var(--gold);
+    color: #0a0a0a;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-save:not(:disabled):active { opacity: 0.8; }
+
+  /* ── LIBRARY VIEW ── */
+  #library-view {
+    overflow: hidden;
+  }
+
+  .library-header {
+    padding: 14px 20px 10px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .library-header h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--gold-light);
+    margin-bottom: 10px;
+  }
+
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-dim);
+  }
+
+  #search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 9px 12px 9px 32px;
+    outline: none;
+  }
+
+  #search-input:focus { border-color: var(--gold-dim); }
+
+  #doc-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    gap: 12px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+
+  .empty-state svg { width: 40px; height: 40px; opacity: 0.2; }
+  .empty-state p { font-size: 12px; line-height: 1.6; }
+
+  .doc-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    -webkit-user-select: none;
+  }
+
+  .doc-item:active { background: var(--surface); }
+
+  .doc-thumb {
+    width: 38px;
+    height: 54px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .doc-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .doc-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+  }
+
+  .doc-thumb-placeholder svg { width: 16px; height: 16px; }
+
+  .doc-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .doc-name {
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .doc-date {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .doc-size {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: 6px;
+  }
+
+  .doc-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .doc-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .doc-action-btn:active { background: var(--surface2); }
+  .doc-action-btn svg { width: 14px; height: 14px; }
+  .doc-action-btn.download:active { color: var(--gold); }
+  .doc-action-btn.delete:active { color: #c04040; border-color: #c04040; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 10px 18px;
+    border-radius: 20px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  #toast.success { border-color: #3a7a4a; color: #6dbb7a; }
+  #toast.error   { border-color: #8b3a3a; color: #c06060; }
+
+  /* ── MODAL (doc detail) ── */
+  #modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  #modal.open { display: flex; }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .modal-header h3 {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 400;
+    flex: 1;
+    color: var(--gold-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--bg);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-img {
+    width: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+
+  .modal-text-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-mid);
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  /* ── FILE INPUT ── */
+  #file-input { display: none; }
+
+  /* ── LOADING OVERLAY ── */
+  #loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  #loading-overlay.show { display: flex; }
+
+  .big-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="logo">Scan<span>PDF</span></div>
+    <div class="doc-count" id="doc-count">0 documents</div>
+  </header>
+
+  <!-- ── SCAN VIEW ── -->
+  <div class="view active" id="scan-view">
+    <div id="camera-container">
+      <video id="camera-video" autoplay playsinline muted></video>
+
+      <div class="scan-overlay" id="scan-overlay">
+        <div class="scan-frame" id="scan-frame">
+          <div class="corner-br"></div>
+          <div class="corner-bl"></div>
+        </div>
+        <div class="scan-line" id="scan-line"></div>
+      </div>
+
+      <div class="camera-controls" id="camera-controls">
+        <button class="btn-icon" id="btn-flip" title="Flip camera">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+        </button>
+
+        <button class="btn-capture" id="btn-capture" title="Capture"></button>
+
+        <button class="btn-icon" id="btn-upload" title="Upload image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="no-camera">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+        <p>Camera access denied or unavailable.<br>Use the upload button to select an image.</p>
+        <button class="btn-primary" id="btn-upload-alt">Upload Image</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PREVIEW VIEW ── -->
+  <div class="view" id="preview-view">
+    <div class="preview-header">
+      <button class="btn-back" id="btn-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <h2>New Document</h2>
+    </div>
+
+    <div class="preview-content">
+      <div id="preview-canvas-wrap">
+        <canvas id="preview-canvas"></canvas>
+      </div>
+
+      <div>
+        <div class="section-label">OCR — Extracted Text</div>
+        <div class="ocr-status" id="ocr-status">
+          <div class="spinner"></div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="ocr-progress-bar"></div>
+          </div>
+          <span id="ocr-status-text">Initialising…</span>
+        </div>
+        <textarea id="ocr-text-area" placeholder="Extracted text will appear here…" style="display:none"></textarea>
+      </div>
+
+      <div>
+        <div class="section-label">Document Name</div>
+        <div class="doc-name-row">
+          <input type="text" id="doc-name-input" placeholder="scan_2024_01_01" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-secondary" id="btn-discard">Discard</button>
+        <button class="btn-save" id="btn-save" disabled>Save PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LIBRARY VIEW ── -->
+  <div class="view" id="library-view">
+    <div class="library-header">
+      <h2>Library</h2>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search documents…">
+      </div>
+    </div>
+
+    <div id="doc-list">
+      <div class="empty-state" id="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <p>No documents yet.<br>Scan something to get started.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM NAV ── -->
+  <nav>
+    <button class="active" id="nav-scan" onclick="showView('scan')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Scan
+    </button>
+    <button id="nav-library" onclick="showView('library')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+      Library
+    </button>
+  </nav>
+</div>
+
+<!-- ── DOCUMENT MODAL ── -->
+<div id="modal">
+  <div class="modal-header">
+    <button class="btn-back" id="modal-close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <h3 id="modal-title"></h3>
+  </div>
+  <div class="modal-body">
+    <img id="modal-img" class="modal-img" src="" alt="">
+    <div>
+      <div class="section-label">Extracted Text</div>
+      <div class="modal-text-block" id="modal-text"></div>
+    </div>
+    <div>
+      <div class="section-label">Info</div>
+      <div class="modal-text-block" id="modal-info" style="max-height:80px"></div>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-secondary" id="modal-delete">Delete</button>
+    <button class="btn-save" id="modal-download">Download PDF</button>
+  </div>
+</div>
+
+<!-- ── LOADING OVERLAY ── -->
+<div id="loading-overlay">
+  <div class="big-spinner"></div>
+  <span id="loading-text">Generating PDF…</span>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<!-- ── HIDDEN FILE INPUT ── -->
+<input type="file" id="file-input" accept="image/*" capture="environment">
+
+<!-- ── SCRIPTS ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DB
+// ══════════════════════════════════════════════════════
+const DB_NAME = 'scanpdf', DB_VER = 1, STORE = 'documents';
+let db;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE)) {
+        const s = d.createObjectStore(STORE, { keyPath: 'id' });
+        s.createIndex('createdAt', 'createdAt');
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function dbTx(mode) { return db.transaction(STORE, mode).objectStore(STORE); }
+
+function saveDoc(doc) {
+  return new Promise((res, rej) => {
+    const req = dbTx('readwrite').put(doc);
+    req.onsuccess = () => res();
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function getAllDocs() {
+  return new Promise((res, rej) => {
+    const req = dbTx('readonly').index('createdAt').getAll();
+    req.onsuccess = e => res(e.target.result.reverse());
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function deleteDoc(id) {
+  return new Promise((res, rej) => {
+    const req = dbTx('readwrite').delete(id);
+    req.onsuccess = () => res();
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let currentView = 'scan';
+let videoStream = null;
+let facingMode  = 'environment';
+let capturedDataUrl = null;
+let ocrText = '';
+let ocrDone = false;
+let allDocs = [];
+let currentModalDoc = null;
+
+// ══════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.className = '', 2400);
+}
+
+function setLoading(show, text = '') {
+  const el = document.getElementById('loading-overlay');
+  el.classList.toggle('show', show);
+  if (text) document.getElementById('loading-text').textContent = text;
+}
+
+function formatDate(ts) {
+  return new Date(ts).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function defaultName() {
+  const now = new Date();
+  return `scan_${now.getFullYear()}_${String(now.getMonth()+1).padStart(2,'0')}_${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════
+// VIEW ROUTING
+// ══════════════════════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(name + '-view').classList.add('active');
+  document.getElementById('nav-' + name)?.classList.add('active');
+  currentView = name;
+  if (name === 'library') renderLibrary();
+  if (name === 'scan') startCamera();
+  if (name !== 'scan') stopCamera();
+}
+
+// ══════════════════════════════════════════════════════
+// CAMERA
+// ══════════════════════════════════════════════════════
+async function startCamera() {
+  const vid = document.getElementById('camera-video');
+  const noCam = document.getElementById('no-camera');
+  const controls = document.getElementById('camera-controls');
+
+  if (videoStream) {
+    videoStream.getTracks().forEach(t => t.stop());
+    videoStream = null;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    videoStream = stream;
+    vid.srcObject = stream;
+    vid.style.display = '';
+    noCam.style.display = 'none';
+    controls.style.display = '';
+  } catch(e) {
+    vid.style.display = 'none';
+    noCam.style.display = 'flex';
+    controls.style.display = 'none';
+  }
+}
+
+function stopCamera() {
+  if (videoStream) {
+    videoStream.getTracks().forEach(t => t.stop());
+    videoStream = null;
+  }
+}
+
+document.getElementById('btn-flip').addEventListener('click', () => {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  startCamera();
+});
+
+// ══════════════════════════════════════════════════════
+// CAPTURE
+// ══════════════════════════════════════════════════════
+function captureAndProcess(imgSrc) {
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.getElementById('preview-canvas');
+    const maxW = 1200;
+    let w = img.width, h = img.height;
+    if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    capturedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+
+    // switch to preview
+    showViewDirect('preview');
+    document.getElementById('doc-name-input').value = defaultName();
+
+    // OCR
+    ocrDone = false;
+    ocrText = '';
+    document.getElementById('btn-save').disabled = true;
+    document.getElementById('ocr-text-area').style.display = 'none';
+    document.getElementById('ocr-status').style.display = 'flex';
+    document.getElementById('ocr-progress-bar').style.width = '0%';
+    document.getElementById('ocr-status-text').textContent = 'Loading OCR engine…';
+    document.getElementById('scan-overlay').classList.remove('scanning');
+
+    runOCR(canvas);
+  };
+  img.src = imgSrc;
+}
+
+function showViewDirect(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(name + '-view').classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  currentView = name;
+  if (name !== 'scan') stopCamera();
+}
+
+document.getElementById('btn-capture').addEventListener('click', () => {
+  const vid = document.getElementById('camera-video');
+  if (!videoStream || !vid.videoWidth) { showToast('No camera feed', 'error'); return; }
+
+  // flash feedback
+  document.getElementById('scan-overlay').classList.add('scanning');
+
+  const tmp = document.createElement('canvas');
+  tmp.width = vid.videoWidth; tmp.height = vid.videoHeight;
+  tmp.getContext('2d').drawImage(vid, 0, 0);
+  captureAndProcess(tmp.toDataURL('image/jpeg', 0.92));
+});
+
+// ══════════════════════════════════════════════════════
+// FILE UPLOAD
+// ══════════════════════════════════════════════════════
+function triggerFileInput() {
+  document.getElementById('file-input').click();
+}
+
+document.getElementById('btn-upload').addEventListener('click', triggerFileInput);
+document.getElementById('btn-upload-alt')?.addEventListener('click', triggerFileInput);
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => captureAndProcess(ev.target.result);
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+// ══════════════════════════════════════════════════════
+// OCR
+// ══════════════════════════════════════════════════════
+async function runOCR(canvas) {
+  const statusText = document.getElementById('ocr-status-text');
+  const progressBar = document.getElementById('ocr-progress-bar');
+
+  try {
+    const worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          progressBar.style.width = pct + '%';
+          statusText.textContent = `Recognising… ${pct}%`;
+        } else if (m.status === 'loading tesseract core') {
+          statusText.textContent = 'Loading core…';
+        } else if (m.status === 'initializing tesseract') {
+          statusText.textContent = 'Initialising…';
+        } else if (m.status === 'loading language traineddata') {
+          statusText.textContent = 'Loading language…';
+        } else if (m.status === 'initializing api') {
+          statusText.textContent = 'Starting engine…';
+        }
+      }
+    });
+
+    const result = await worker.recognize(canvas);
+    ocrText = result.data.text.trim();
+    await worker.terminate();
+
+    // show result
+    document.getElementById('ocr-status').style.display = 'none';
+    const ta = document.getElementById('ocr-text-area');
+    ta.style.display = 'block';
+    ta.value = ocrText || '(No text detected)';
+    ocrDone = true;
+    document.getElementById('btn-save').disabled = false;
+
+  } catch(err) {
+    document.getElementById('ocr-status').style.display = 'none';
+    const ta = document.getElementById('ocr-text-area');
+    ta.style.display = 'block';
+    ta.value = '';
+    ocrDone = true;
+    document.getElementById('btn-save').disabled = false;
+    showToast('OCR failed — saving image only', 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// SAVE PDF
+// ══════════════════════════════════════════════════════
+document.getElementById('btn-save').addEventListener('click', async () => {
+  if (!capturedDataUrl) return;
+
+  const nameInput = document.getElementById('doc-name-input').value.trim() || defaultName();
+  const ocrFinal  = document.getElementById('ocr-text-area').value || '';
+
+  setLoading(true, 'Generating PDF…');
+
+  try {
+    const { jsPDF } = window.jspdf;
+
+    // get image dimensions
+    const img = new Image();
+    await new Promise(res => { img.onload = res; img.src = capturedDataUrl; });
+
+    const pageW = 210, pageH = Math.round(297 * img.height / img.width);  // A4 width, proportional height
+    const pdf = new jsPDF({ orientation: pageW > pageH ? 'l' : 'p', unit: 'mm', format: [pageW, pageH] });
+
+    // embed image
+    pdf.addImage(capturedDataUrl, 'JPEG', 0, 0, pageW, pageH, '', 'FAST');
+
+    // invisible text layer for searchability
+    if (ocrFinal) {
+      pdf.setFontSize(8);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setGState(new pdf.GState({ opacity: 0 }));
+      const lines = ocrFinal.split('\n');
+      const lineH = pageH / Math.max(lines.length, 1);
+      lines.forEach((line, i) => {
+        if (line.trim()) pdf.text(line, 2, 4 + i * lineH);
+      });
+    }
+
+    const pdfBlob = pdf.output('blob');
+    const pdfBytes = await pdfBlob.arrayBuffer();
+
+    // thumbnail: tiny jpeg of captured image
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 80; thumbCanvas.height = Math.round(80 * img.height / img.width);
+    thumbCanvas.getContext('2d').drawImage(img, 0, 0, thumbCanvas.width, thumbCanvas.height);
+    const thumb = thumbCanvas.toDataURL('image/jpeg', 0.6);
+
+    const doc = {
+      id: Date.now().toString(),
+      name: nameInput,
+      createdAt: Date.now(),
+      ocrText: ocrFinal,
+      thumb,
+      pdf: new Uint8Array(pdfBytes),
+      size: pdfBlob.size
+    };
+
+    await saveDoc(doc);
+    setLoading(false);
+    showToast('Saved — ' + nameInput, 'success');
+
+    // back to scan
+    capturedDataUrl = null;
+    ocrText = '';
+    ocrDone = false;
+    showView('scan');
+    updateDocCount();
+
+  } catch(err) {
+    setLoading(false);
+    showToast('Save failed: ' + err.message, 'error');
+    console.error(err);
+  }
+});
+
+document.getElementById('btn-discard').addEventListener('click', () => {
+  capturedDataUrl = null;
+  showView('scan');
+});
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  capturedDataUrl = null;
+  showView('scan');
+});
+
+// ══════════════════════════════════════════════════════
+// LIBRARY
+// ══════════════════════════════════════════════════════
+async function renderLibrary(filter = '') {
+  allDocs = await getAllDocs();
+  const list = document.getElementById('doc-list');
+  const empty = document.getElementById('empty-state');
+  const query = filter.toLowerCase();
+  const docs = query ? allDocs.filter(d => d.name.toLowerCase().includes(query) || d.ocrText?.toLowerCase().includes(query)) : allDocs;
+
+  // remove existing items (keep empty state)
+  list.querySelectorAll('.doc-item').forEach(el => el.remove());
+
+  if (!docs.length) {
+    empty.style.display = 'flex';
+    empty.querySelector('p').textContent = filter ? 'No results found.' : 'No documents yet.\nScan something to get started.';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  docs.forEach(doc => {
+    const item = document.createElement('div');
+    item.className = 'doc-item';
+    item.dataset.id = doc.id;
+    item.innerHTML = `
+      <div class="doc-thumb">
+        ${doc.thumb
+          ? `<img src="${doc.thumb}" alt="">`
+          : `<div class="doc-thumb-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>`
+        }
+      </div>
+      <div class="doc-meta">
+        <div class="doc-name">${escapeHtml(doc.name)}</div>
+        <div class="doc-date">${formatDate(doc.createdAt)}<span class="doc-size">${formatBytes(doc.size)}</span></div>
+      </div>
+      <div class="doc-actions">
+        <button class="doc-action-btn download" data-id="${doc.id}" title="Download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+        <button class="doc-action-btn delete" data-id="${doc.id}" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+          </svg>
+        </button>
+      </div>`;
+
+    // click item → modal
+    item.addEventListener('click', e => {
+      if (e.target.closest('.doc-action-btn')) return;
+      openModal(doc.id);
+    });
+
+    // download
+    item.querySelector('.download').addEventListener('click', e => {
+      e.stopPropagation();
+      downloadDoc(doc.id);
+    });
+
+    // delete
+    item.querySelector('.delete').addEventListener('click', e => {
+      e.stopPropagation();
+      confirmDelete(doc.id, doc.name);
+    });
+
+    list.appendChild(item);
+  });
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('search-input').addEventListener('input', e => {
+  renderLibrary(e.target.value);
+});
+
+// ══════════════════════════════════════════════════════
+// DOWNLOAD
+// ══════════════════════════════════════════════════════
+async function downloadDoc(id) {
+  const docs = await getAllDocs();
+  const doc = docs.find(d => d.id === id);
+  if (!doc) return;
+  const blob = new Blob([doc.pdf], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = doc.name + '.pdf';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Downloaded', 'success');
+}
+
+// ══════════════════════════════════════════════════════
+// DELETE
+// ══════════════════════════════════════════════════════
+async function confirmDelete(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  await deleteDoc(id);
+  showToast('Deleted', '');
+  renderLibrary(document.getElementById('search-input').value);
+  updateDocCount();
+}
+
+// ══════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════
+async function openModal(id) {
+  const docs = await getAllDocs();
+  const doc = docs.find(d => d.id === id);
+  if (!doc) return;
+  currentModalDoc = doc;
+
+  document.getElementById('modal-title').textContent = doc.name;
+  document.getElementById('modal-img').src = doc.thumb || '';
+  document.getElementById('modal-img').style.display = doc.thumb ? 'block' : 'none';
+  document.getElementById('modal-text').textContent = doc.ocrText || '(No text)';
+  document.getElementById('modal-info').textContent =
+    `Created: ${formatDate(doc.createdAt)}\nSize: ${formatBytes(doc.size)}`;
+
+  document.getElementById('modal').classList.add('open');
+}
+
+document.getElementById('modal-close').addEventListener('click', () => {
+  document.getElementById('modal').classList.remove('open');
+  currentModalDoc = null;
+});
+
+document.getElementById('modal-download').addEventListener('click', () => {
+  if (currentModalDoc) downloadDoc(currentModalDoc.id);
+});
+
+document.getElementById('modal-delete').addEventListener('click', async () => {
+  if (!currentModalDoc) return;
+  document.getElementById('modal').classList.remove('open');
+  await confirmDelete(currentModalDoc.id, currentModalDoc.name);
+  currentModalDoc = null;
+});
+
+// ══════════════════════════════════════════════════════
+// DOC COUNT
+// ══════════════════════════════════════════════════════
+async function updateDocCount() {
+  const docs = await getAllDocs();
+  const n = docs.length;
+  document.getElementById('doc-count').textContent = n === 0 ? '0 documents' : n === 1 ? '1 document' : n + ' documents';
+}
+
+// ══════════════════════════════════════════════════════
+// PWA SERVICE WORKER
+// ══════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+(async () => {
+  await openDB();
+  await updateDocCount();
+  startCamera();
+})();
+</script>
+</body>
+</html>
