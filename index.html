@@ -361,7 +361,18 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 function loadImg(src){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src})}
 async function mkThumb(src){const img=await loadImg(src);const w=80,h=Math.round(80*img.height/img.width);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);return c.toDataURL('image/jpeg',.6)}
 function f2url(f){return new Promise((r,j)=>{const rd=new FileReader();rd.onload=e=>r(e.target.result);rd.onerror=j;rd.readAsDataURL(f)})}
-function dlBlob(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),5000)}
+async function dlBlob(blob,name){
+  const file=new File([blob],name,{type:'application/pdf'});
+  // Web Share API (works on Firefox/Chrome Android — shows native share sheet)
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return}
+  }
+  // Fallback: object URL download
+  const u=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=u;a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(u),5000);
+}
 async function updCount(){const d=await dbAll();$('doc-count').textContent=d.length?d.length+(d.length===1?' doc':' docs'):''}
 
 // ── HOMOGRAPHY ──────────────────────────────────────────────────
