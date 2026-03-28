@@ -448,7 +448,7 @@ async function startCam(){
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
   try{
     camStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:camFacing,width:{ideal:2560},height:{ideal:1440}},audio:false
+      video:{facingMode:camFacing},audio:false
     });
     vid.srcObject=camStream;
     vid.style.display='block';
@@ -477,9 +477,9 @@ $('btn-shutter').addEventListener('click',()=>{
   const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;
   c.getContext('2d').drawImage(vid,0,0);
   if(editAddMode){
-    showPreviewForEdit(c.toDataURL('image/jpeg',.92));
+    showPreviewForEdit(c.toDataURL('image/jpeg',1.0));
   } else {
-    showPreview(c.toDataURL('image/jpeg',.92));
+    showPreview(c.toDataURL('image/jpeg',1.0));
   }
 });
 
@@ -707,7 +707,8 @@ async function buildPDF(pgList){
     const pw=210,ph=Math.round(297*img.height/img.width);
     if(!pdf)pdf=new jsPDF({orientation:pw>ph?'l':'p',unit:'mm',format:[pw,ph]});
     else pdf.addPage([pw,ph],pw>ph?'l':'p');
-    pdf.addImage(pg.dataUrl,'JPEG',0,0,pw,ph,'','FAST');
+    const fmt=pg.dataUrl.startsWith('data:image/png')?'PNG':'JPEG';
+    pdf.addImage(pg.dataUrl,fmt,0,0,pw,ph,'','NONE');
   }
   return pdf;
 }
