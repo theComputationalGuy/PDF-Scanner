@@ -40,7 +40,7 @@ nav button.active{color:var(--gold)}
 nav button:active{opacity:.6}
 
 /* SCAN */
-#cam-wrap{position:relative;flex:1;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#scan-view{position:relative}#cam-wrap{position:relative;flex:1;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
 #cam-video{width:100%;height:100%;object-fit:cover}
 .cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;aspect-ratio:.707;pointer-events:none}
 .cam-frame::before,.cam-frame::after,.cf-br,.cf-bl{content:'';position:absolute;width:20px;height:20px;border-color:var(--gold2);border-style:solid;opacity:.7}
@@ -48,7 +48,7 @@ nav button:active{opacity:.6}
 .cam-frame::after{top:-1px;right:-1px;border-width:2px 2px 0 0}
 .cf-br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
 .cf-bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}
-.cam-btns{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-around;padding:14px 28px 18px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.cam-btns{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-around;padding:14px 28px 18px;background:linear-gradient(transparent,rgba(0,0,0,.8));z-index:20}
 .btn-shutter{width:62px;height:62px;border-radius:50%;border:2.5px solid var(--gold2);background:none;cursor:pointer;position:relative;transition:transform .1s;flex-shrink:0}
 .btn-shutter::after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--gold2);transition:transform .12s}
 .btn-shutter:active{transform:scale(.9)}
@@ -61,25 +61,25 @@ nav button:active{opacity:.6}
 #no-cam svg{width:44px;height:44px;opacity:.25}
 #no-cam p{font-size:12px;line-height:1.6}
 
-/* PAGE STRIP */
-#strip-wrap{flex-shrink:0;background:var(--s1);border-top:1px solid var(--br);display:none;flex-direction:column}
-#strip-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 14px 0}
+/* PAGE STRIP — floats over camera */
+#strip-wrap{position:absolute;left:0;right:0;bottom:52px;background:rgba(10,10,10,.88);border-top:1px solid rgba(255,255,255,.08);display:none;flex-direction:column;backdrop-filter:blur(8px);z-index:10}
+#strip-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 0}
 #strip-hdr span{font-size:10px;color:var(--txd);letter-spacing:.1em;text-transform:uppercase}
-#strip{display:flex;gap:10px;padding:7px 14px 9px;overflow-x:auto;-webkit-overflow-scrolling:touch;min-height:90px;align-items:center}
+#strip{display:flex;gap:9px;padding:6px 14px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;align-items:center}
 #strip::-webkit-scrollbar{display:none}
-.sthumb{flex-shrink:0;width:50px;height:70px;border-radius:3px;border:1.5px solid var(--br2);background:var(--s2);overflow:hidden;position:relative;cursor:pointer}
+.sthumb{flex-shrink:0;width:44px;height:60px;border-radius:3px;border:1.5px solid var(--br2);background:var(--s2);overflow:hidden;position:relative;cursor:pointer}
 .sthumb img{width:100%;height:100%;object-fit:cover;pointer-events:none}
-.sthumb .pn{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.55);padding:2px 0}
+.sthumb .pn{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.55);padding:1px 0}
 .sthumb .dx{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(160,30,30,.9);border:none;color:#fff;font-size:11px;line-height:16px;text-align:center;cursor:pointer;display:none;z-index:2}
 .sthumb.sdel .dx{display:block}
 .sthumb.drag-over{border-color:var(--gold);transform:scale(1.06)}
 .sthumb.dragging{opacity:.35}
-.strip-add-btn{flex-shrink:0;width:50px;height:70px;border-radius:3px;border:1.5px dashed var(--br2);background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--txd)}
-.strip-add-btn svg{width:20px;height:20px}
+.strip-add-btn{flex-shrink:0;width:44px;height:60px;border-radius:3px;border:1.5px dashed var(--br2);background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--txd)}
+.strip-add-btn svg{width:18px;height:18px}
 .strip-add-btn:active{border-color:var(--gold);color:var(--gold)}
 
-/* SAVE ROW */
-#save-row{display:none;flex-shrink:0;padding:9px 14px;background:var(--s1);border-top:1px solid var(--br);gap:9px;align-items:center}
+/* SAVE ROW — floats over camera, above strip */
+#save-row{position:absolute;left:0;right:0;bottom:0;display:none;padding:8px 14px 10px;background:rgba(10,10,10,.88);gap:9px;align-items:center;backdrop-filter:blur(8px);z-index:10;border-top:1px solid rgba(255,255,255,.08)}
 #doc-name{flex:1;background:var(--s2);border:1px solid var(--br);border-radius:var(--r);color:var(--tx);font-family:var(--fm);font-size:12px;padding:9px 11px;outline:none}
 #doc-name:focus{border-color:var(--goldd)}
 .btn-save{padding:9px 18px;background:var(--gold);color:#0a0a0a;border:none;border-radius:var(--r);font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.06em;cursor:pointer;white-space:nowrap;flex-shrink:0}
@@ -203,21 +203,21 @@ nav button:active{opacity:.6}
         <p>Camera unavailable.</p>
         <button class="btn-save" onclick="fi1.click()">Pick from Gallery</button>
       </div>
-    </div>
-    <div id="strip-wrap">
-      <div id="strip-hdr">
-        <span id="strip-lbl">Pages</span>
-        <button class="btn-back" id="btn-clear" style="width:auto;padding:3px 10px;font-size:10px;color:var(--txd);letter-spacing:.06em">Clear all</button>
+      <div id="strip-wrap">
+        <div id="strip-hdr">
+          <span id="strip-lbl">Pages</span>
+          <button class="btn-back" id="btn-clear" style="width:auto;padding:3px 10px;font-size:10px;color:var(--txd);letter-spacing:.06em">Clear all</button>
+        </div>
+        <div id="strip">
+          <button class="strip-add-btn" id="btn-add-more">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
       </div>
-      <div id="strip">
-        <button class="strip-add-btn" id="btn-add-more">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
+      <div id="save-row">
+        <input type="text" id="doc-name" placeholder="document name…" autocomplete="off" spellcheck="false">
+        <button class="btn-save" id="btn-save">Save PDF</button>
       </div>
-    </div>
-    <div id="save-row">
-      <input type="text" id="doc-name" placeholder="document name…" autocomplete="off" spellcheck="false">
-      <button class="btn-save" id="btn-save">Save PDF</button>
     </div>
   </div>
 
@@ -448,7 +448,7 @@ async function startCam(){
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
   try{
     camStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:camFacing},audio:false
+      video:{facingMode:camFacing,width:{ideal:4096},height:{ideal:2160}},audio:false
     });
     vid.srcObject=camStream;
     vid.style.display='block';
@@ -649,8 +649,20 @@ function renderStrip(){
     strip.insertBefore(d,addBtn);
   });
   const has=pages.length>0;
-  $('strip-wrap').style.display=has?'flex':'none';
-  $('save-row').style.display=has?'flex':'none';
+  const saveRow=$('save-row');
+  const stripWrap=$('strip-wrap');
+  saveRow.style.display=has?'flex':'none';
+  stripWrap.style.display=has?'flex':'none';
+  if(has){
+    requestAnimationFrame(()=>{
+      const saveH=saveRow.offsetHeight||52;
+      stripWrap.style.bottom=saveH+'px';
+      const stripH=stripWrap.offsetHeight||80;
+      $('cam-btns').style.bottom=(saveH+stripH)+'px';
+    });
+  } else {
+    $('cam-btns').style.bottom='';
+  }
   $('scan-badge').style.display=has?'block':'none';
   $('scan-badge').textContent=pages.length+' page'+(pages.length>1?'s':'');
   $('strip-lbl').textContent=`Pages (${pages.length})`;
