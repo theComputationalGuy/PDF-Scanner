@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0d0d0d">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ScanPDF">
 <link rel="manifest" href="manifest.json">
@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#0d0d0d; --s1:#141414; --s2:#1c1c1c; --s3:#242424;
+  --bg:#0d0d0d; --s1:#141414; --s2:#1c1c1c;
   --br:#2e2e2e; --br2:#3a3a3a;
   --gold:#bf8f3e; --gold2:#d4aa60; --gold3:#f0d090; --goldd:#6b4f22;
   --tx:#ede6d8; --txm:#a09080; --txd:#5a5040;
@@ -21,12 +21,18 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--fm);font-size:13px;overflow:hidden;overscroll-behavior:none}
 #app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
 header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px 11px;border-bottom:1px solid var(--br);flex-shrink:0;background:var(--bg);z-index:20}
 .logo{font-family:var(--fd);font-size:24px;font-weight:600;color:var(--gold3);letter-spacing:.02em;line-height:1}
 .logo em{color:var(--gold);font-style:normal}
 #doc-count{font-size:10px;color:var(--txd);letter-spacing:.1em}
+
+/* VIEWS */
 .view{display:none;flex:1;overflow:hidden;flex-direction:column}
 .view.active{display:flex}
+
+/* NAV */
 nav{display:flex;border-top:1px solid var(--br);flex-shrink:0;background:var(--bg)}
 nav button{flex:1;padding:11px 4px 9px;background:none;border:none;color:var(--txd);font-family:var(--fm);font-size:9px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .15s}
 nav button svg{width:19px;height:19px;stroke-width:1.8}
@@ -36,20 +42,20 @@ nav button:active{opacity:.6}
 /* SCAN */
 #cam-wrap{position:relative;flex:1;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
 #cam-video{width:100%;height:100%;object-fit:cover}
-.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;aspect-ratio:.707}
-.cam-frame::before,.cam-frame::after,.cf-br,.cf-bl{content:'';position:absolute;width:20px;height:20px;border-color:var(--gold2);border-style:solid;opacity:.75}
+.cam-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;aspect-ratio:.707;pointer-events:none}
+.cam-frame::before,.cam-frame::after,.cf-br,.cf-bl{content:'';position:absolute;width:20px;height:20px;border-color:var(--gold2);border-style:solid;opacity:.7}
 .cam-frame::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
 .cam-frame::after{top:-1px;right:-1px;border-width:2px 2px 0 0}
 .cf-br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
 .cf-bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}
 .cam-btns{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-around;padding:14px 28px 18px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
-.btn-shutter{width:62px;height:62px;border-radius:50%;border:2.5px solid var(--gold2);background:none;cursor:pointer;position:relative;transition:transform .1s}
+.btn-shutter{width:62px;height:62px;border-radius:50%;border:2.5px solid var(--gold2);background:none;cursor:pointer;position:relative;transition:transform .1s;flex-shrink:0}
 .btn-shutter::after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--gold2);transition:transform .12s}
 .btn-shutter:active{transform:scale(.9)}
 .btn-shutter:active::after{transform:scale(.85)}
-.btn-round{width:42px;height:42px;border-radius:50%;border:1px solid var(--br2);background:rgba(255,255,255,.05);color:var(--tx);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-round{width:42px;height:42px;border-radius:50%;border:1px solid var(--br2);background:rgba(255,255,255,.05);color:var(--tx);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .btn-round svg{width:18px;height:18px}
-.btn-round:active{background:rgba(255,255,255,.12)}
+.btn-round:active{background:rgba(255,255,255,.15)}
 #scan-badge{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.65);border:1px solid var(--br2);color:var(--gold2);font-size:11px;padding:4px 10px;border-radius:20px;display:none;backdrop-filter:blur(4px)}
 #no-cam{display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;flex:1;padding:40px;text-align:center;color:var(--txd)}
 #no-cam svg{width:44px;height:44px;opacity:.25}
@@ -59,12 +65,12 @@ nav button:active{opacity:.6}
 #strip-wrap{flex-shrink:0;background:var(--s1);border-top:1px solid var(--br);display:none;flex-direction:column}
 #strip-hdr{display:flex;align-items:center;justify-content:space-between;padding:7px 14px 0}
 #strip-hdr span{font-size:10px;color:var(--txd);letter-spacing:.1em;text-transform:uppercase}
-#strip{display:flex;gap:10px;padding:7px 14px 9px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#strip{display:flex;gap:10px;padding:7px 14px 9px;overflow-x:auto;-webkit-overflow-scrolling:touch;min-height:90px;align-items:center}
 #strip::-webkit-scrollbar{display:none}
-.sthumb{flex-shrink:0;width:50px;height:70px;border-radius:3px;border:1.5px solid var(--br2);background:var(--s2);overflow:hidden;position:relative;cursor:grab}
+.sthumb{flex-shrink:0;width:50px;height:70px;border-radius:3px;border:1.5px solid var(--br2);background:var(--s2);overflow:hidden;position:relative;cursor:pointer}
 .sthumb img{width:100%;height:100%;object-fit:cover;pointer-events:none}
-.sthumb .pn{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.5);padding:1px 0}
-.sthumb .dx{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(150,30,30,.85);border:none;color:#fff;font-size:10px;line-height:16px;text-align:center;cursor:pointer;display:none}
+.sthumb .pn{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.55);padding:2px 0}
+.sthumb .dx{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(160,30,30,.9);border:none;color:#fff;font-size:11px;line-height:16px;text-align:center;cursor:pointer;display:none;z-index:2}
 .sthumb.sdel .dx{display:block}
 .sthumb.drag-over{border-color:var(--gold);transform:scale(1.06)}
 .sthumb.dragging{opacity:.35}
@@ -76,8 +82,13 @@ nav button:active{opacity:.6}
 #save-row{display:none;flex-shrink:0;padding:9px 14px;background:var(--s1);border-top:1px solid var(--br);gap:9px;align-items:center}
 #doc-name{flex:1;background:var(--s2);border:1px solid var(--br);border-radius:var(--r);color:var(--tx);font-family:var(--fm);font-size:12px;padding:9px 11px;outline:none}
 #doc-name:focus{border-color:var(--goldd)}
-.btn-save{padding:9px 18px;background:var(--gold);color:#0a0a0a;border:none;border-radius:var(--r);font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.06em;cursor:pointer;white-space:nowrap}
+.btn-save{padding:9px 18px;background:var(--gold);color:#0a0a0a;border:none;border-radius:var(--r);font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.06em;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .btn-save:active{opacity:.8}
+
+/* PREVIEW SCREEN (after capture, before deciding) */
+#preview-view{background:#000;position:relative}
+#preview-img{width:100%;height:100%;object-fit:contain;display:block}
+#preview-actions{position:absolute;bottom:0;left:0;right:0;display:flex;gap:10px;padding:16px 20px 22px;background:linear-gradient(transparent,rgba(0,0,0,.85))}
 
 /* CROP VIEW */
 #crop-view{background:var(--bg)}
@@ -86,6 +97,15 @@ nav button:active{opacity:.6}
 #crop-wrap{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:12px;touch-action:none}
 #crop-canvas{display:block;max-width:100%;max-height:100%;touch-action:none}
 #crop-ftr{flex-shrink:0;display:flex;gap:10px;padding:11px 18px;border-top:1px solid var(--br);background:var(--bg)}
+
+/* PAGE VIEWER (full-screen preview of a page in strip) */
+#page-viewer{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:60;display:none;flex-direction:column}
+#page-viewer.open{display:flex}
+#pv-hdr{display:flex;align-items:center;gap:12px;padding:13px 18px;flex-shrink:0}
+#pv-title{font-size:12px;color:var(--txm);flex:1;letter-spacing:.06em}
+#pv-img-wrap{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:10px}
+#pv-img{max-width:100%;max-height:100%;object-fit:contain;display:block;border-radius:3px}
+#pv-ftr{flex-shrink:0;display:flex;gap:10px;padding:11px 18px 16px;border-top:1px solid var(--br)}
 
 /* LIBRARY */
 #library-view{overflow:hidden}
@@ -124,21 +144,21 @@ nav button:active{opacity:.6}
 .slbl{font-size:10px;letter-spacing:.12em;color:var(--txd);text-transform:uppercase;margin-bottom:7px}
 #edit-strip{display:flex;gap:9px;padding:2px 0 6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 #edit-strip::-webkit-scrollbar{display:none}
-.ethumb{flex-shrink:0;width:58px;height:82px;border-radius:3px;border:1.5px solid var(--br2);background:var(--s2);overflow:hidden;position:relative;cursor:grab}
+.ethumb{flex-shrink:0;width:58px;height:82px;border-radius:3px;border:1.5px solid var(--br2);background:var(--s2);overflow:hidden;position:relative;cursor:pointer}
 .ethumb img{width:100%;height:100%;object-fit:cover;pointer-events:none}
-.ethumb .pn{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.5);padding:1px 0}
-.ethumb .dx{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(150,30,30,.85);border:none;color:#fff;font-size:10px;line-height:16px;text-align:center;cursor:pointer}
+.ethumb .pn{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:rgba(255,255,255,.8);background:rgba(0,0,0,.55);padding:2px 0}
+.ethumb .dx{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(160,30,30,.9);border:none;color:#fff;font-size:11px;line-height:16px;text-align:center;cursor:pointer;z-index:2}
 .ethumb.drag-over{border-color:var(--gold)}
 .ethumb.dragging{opacity:.35}
-.add-btns{display:flex;gap:8px;margin-top:4px}
+.add-btns{display:flex;gap:8px;margin-top:6px}
 
-/* SHARED BUTTONS */
+/* BUTTONS */
 .btn-ghost{flex:1;padding:10px;background:var(--s2);color:var(--txm);border:1px solid var(--br);border-radius:var(--r);font-family:var(--fm);font-size:11px;letter-spacing:.06em;cursor:pointer}
 .btn-ghost:active{background:var(--br)}
 .btn-primary{flex:2;padding:10px;background:var(--gold);color:#0a0a0a;border:none;border-radius:var(--r);font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.07em;cursor:pointer}
 .btn-primary:active{opacity:.8}
 .btn-danger{background:#7a2020;color:var(--tx)}
-.btn-back{width:32px;height:32px;border:1px solid var(--br);background:none;border-radius:var(--r);color:var(--tx);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-back{width:32px;height:32px;border:1px solid var(--br);background:none;border-radius:var(--r);color:var(--tx);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .btn-back svg{width:15px;height:15px}
 
 /* TOAST */
@@ -163,7 +183,7 @@ nav button:active{opacity:.6}
     <div id="doc-count"></div>
   </header>
 
-  <!-- ══ SCAN VIEW ══ -->
+  <!-- SCAN VIEW -->
   <div class="view active" id="scan-view">
     <div id="cam-wrap">
       <video id="cam-video" autoplay playsinline muted></video>
@@ -187,7 +207,7 @@ nav button:active{opacity:.6}
     <div id="strip-wrap">
       <div id="strip-hdr">
         <span id="strip-lbl">Pages</span>
-        <button class="btn-back" id="btn-clear" style="width:auto;padding:4px 10px;font-size:10px;letter-spacing:.06em;color:var(--txd)">Clear all</button>
+        <button class="btn-back" id="btn-clear" style="width:auto;padding:3px 10px;font-size:10px;color:var(--txd);letter-spacing:.06em">Clear all</button>
       </div>
       <div id="strip">
         <button class="strip-add-btn" id="btn-add-more">
@@ -201,23 +221,34 @@ nav button:active{opacity:.6}
     </div>
   </div>
 
-  <!-- ══ CROP VIEW ══ -->
+  <!-- PREVIEW VIEW (after capture, optional crop decision) -->
+  <div class="view" id="preview-view">
+    <div style="flex:1;background:#000;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
+      <img id="preview-img" style="max-width:100%;max-height:100%;object-fit:contain;display:block">
+      <div id="preview-actions" style="position:absolute;bottom:0;left:0;right:0;display:flex;gap:10px;padding:16px 20px 22px;background:linear-gradient(transparent,rgba(0,0,0,.88))">
+        <button class="btn-ghost" id="btn-retake">Retake</button>
+        <button class="btn-ghost" id="btn-do-crop">Crop</button>
+        <button class="btn-primary" id="btn-use-as-is">Add Page</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CROP VIEW -->
   <div class="view" id="crop-view">
     <div id="crop-hdr">
       <button class="btn-back" id="btn-crop-cancel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <h2>Adjust Crop</h2>
     </div>
     <div id="crop-wrap"><canvas id="crop-canvas"></canvas></div>
     <div id="crop-ftr">
       <button class="btn-ghost" id="btn-crop-reset">Reset</button>
-      <button class="btn-ghost" id="btn-crop-skip">Skip</button>
-      <button class="btn-primary" id="btn-crop-ok">Apply</button>
+      <button class="btn-primary" id="btn-crop-ok">Apply Crop</button>
     </div>
   </div>
 
-  <!-- ══ LIBRARY VIEW ══ -->
+  <!-- LIBRARY VIEW -->
   <div class="view" id="library-view">
     <div class="lib-hdr">
       <h2>Library</h2>
@@ -241,7 +272,22 @@ nav button:active{opacity:.6}
   </nav>
 </div>
 
-<!-- MODAL -->
+<!-- PAGE VIEWER (full-screen tap preview) -->
+<div id="page-viewer">
+  <div id="pv-hdr">
+    <button class="btn-back" id="pv-close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="pv-title"></div>
+  </div>
+  <div id="pv-img-wrap"><img id="pv-img" alt=""></div>
+  <div id="pv-ftr">
+    <button class="btn-ghost" id="pv-crop">Crop This Page</button>
+    <button class="btn-ghost btn-danger" id="pv-delete">Delete</button>
+  </div>
+</div>
+
+<!-- MODAL (library edit) -->
 <div id="modal">
   <div class="mhdr">
     <button class="btn-back" id="modal-close">
@@ -251,7 +297,7 @@ nav button:active{opacity:.6}
   </div>
   <div class="mbody">
     <div>
-      <div class="slbl">Pages — drag to reorder, × to delete</div>
+      <div class="slbl">Pages — tap to preview · drag to reorder · × to delete</div>
       <div id="edit-strip"></div>
       <div class="add-btns">
         <button class="btn-ghost" id="m-add-cam">+ Camera</button>
@@ -266,7 +312,7 @@ nav button:active{opacity:.6}
     <div style="font-size:11px;color:var(--txd)" id="modal-info"></div>
   </div>
   <div class="mftr">
-    <button class="btn-ghost btn-danger" id="modal-del">Delete</button>
+    <button class="btn-ghost btn-danger" id="modal-del">Delete Doc</button>
     <button class="btn-ghost" id="modal-dl">Download</button>
     <button class="btn-primary" id="modal-save">Save Changes</button>
   </div>
@@ -281,7 +327,7 @@ nav button:active{opacity:.6}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // ── DB ──────────────────────────────────────────────────────────
-const DB_NAME='scanpdf3',STORE='docs';
+const DB_NAME='scanpdf4',STORE='docs';
 let db;
 function openDB(){
   return new Promise((res,rej)=>{
@@ -297,11 +343,11 @@ function openDB(){
     r.onerror=e=>rej(e.target.error);
   });
 }
-const tx=m=>db.transaction(STORE,m).objectStore(STORE);
-const dbPut=d=>new Promise((r,j)=>{const q=tx('readwrite').put(d);q.onsuccess=r;q.onerror=e=>j(e.target.error)});
-const dbDel=id=>new Promise((r,j)=>{const q=tx('readwrite').delete(id);q.onsuccess=r;q.onerror=e=>j(e.target.error)});
-const dbAll=()=>new Promise((r,j)=>{const q=tx('readonly').index('ts').getAll();q.onsuccess=e=>r(e.target.result.reverse());q.onerror=e=>j(e.target.error)});
-const dbGet=id=>new Promise((r,j)=>{const q=tx('readonly').get(id);q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error)});
+const txs=m=>db.transaction(STORE,m).objectStore(STORE);
+const dbPut=d=>new Promise((r,j)=>{const q=txs('readwrite').put(d);q.onsuccess=r;q.onerror=e=>j(e.target.error)});
+const dbDel=id=>new Promise((r,j)=>{const q=txs('readwrite').delete(id);q.onsuccess=r;q.onerror=e=>j(e.target.error)});
+const dbAll=()=>new Promise((r,j)=>{const q=txs('readonly').index('ts').getAll();q.onsuccess=e=>r(e.target.result.reverse());q.onerror=e=>j(e.target.error)});
+const dbGet=id=>new Promise((r,j)=>{const q=txs('readonly').get(id);q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error)});
 
 // ── UTILS ────────────────────────────────────────────────────────
 const $=id=>document.getElementById(id);
@@ -359,12 +405,15 @@ function warpCanvas(sc,pts){
 }
 
 // ── STATE ────────────────────────────────────────────────────────
-let pages=[];          // {dataUrl,thumb}[]  — current scan session
+let pages=[];           // {dataUrl,thumb}[]
 let camStream=null;
 let camFacing='environment';
-let cropCb=null;       // {srcCanvas,scale,resolve,reject}
+let pendingDataUrl=null;  // captured image waiting in preview screen
+let cropCb=null;          // {srcCanvas,scale,img,pts,dw,dh} — crop session
+let cropResolve=null;     // called with {dataUrl,thumb} or null
+let pvPageIdx=-1;         // which page is open in page-viewer
 let editDoc=null;
-let editPages=[];      // {dataUrl,thumb}[]
+let editPages=[];
 let editAddMode=false;
 
 // ── VIEW ROUTER ──────────────────────────────────────────────────
@@ -377,7 +426,7 @@ function gotoView(name){
   else stopCam();
   if(name==='library') renderLib();
 }
-function gotoViewDirect(name){
+function gotoViewOnly(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   $(`${name}-view`).classList.add('active');
 }
@@ -387,36 +436,40 @@ async function startCam(){
   const vid=$('cam-video'),nc=$('no-cam'),cb=$('cam-btns');
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
   try{
-    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing,width:{ideal:2560},height:{ideal:1440}},audio:false});
-    vid.srcObject=camStream;vid.style.display='';nc.style.display='none';cb.style.display='';
-  }catch{vid.style.display='none';nc.style.display='flex';cb.style.display='none'}
+    camStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:camFacing,width:{ideal:2560},height:{ideal:1440}},audio:false
+    });
+    vid.srcObject=camStream;
+    vid.style.display='block';
+    nc.style.display='none';
+    cb.style.display='flex';
+  }catch(e){
+    console.warn('Camera error:',e);
+    vid.style.display='none';
+    nc.style.display='flex';
+    cb.style.display='none';
+  }
 }
 function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}}
 $('btn-flip').addEventListener('click',()=>{camFacing=camFacing==='environment'?'user':'environment';startCam()});
 
-// ── CAPTURE ──────────────────────────────────────────────────────
-async function captureFromVideo(){
-  const vid=$('cam-video');
-  if(!camStream||!vid.videoWidth){toast('No camera','err');return null}
-  const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;
-  c.getContext('2d').drawImage(vid,0,0);
-  return c.toDataURL('image/jpeg',.92);
+// ── CAPTURE → PREVIEW ────────────────────────────────────────────
+function showPreview(dataUrl){
+  pendingDataUrl=dataUrl;
+  $('preview-img').src=dataUrl;
+  gotoViewOnly('preview');
 }
 
-$('btn-shutter').addEventListener('click',async()=>{
+$('btn-shutter').addEventListener('click',()=>{
+  const vid=$('cam-video');
+  if(!camStream||!vid.videoWidth){toast('No camera feed','err');return}
+  const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;
+  c.getContext('2d').drawImage(vid,0,0);
   if(editAddMode){
-    // shutter in edit-add mode
-    const url=await captureFromVideo();if(!url)return;
-    const pg=await cropFlow(url);
-    if(pg){editPages.push(pg);renderEditStrip()}
-    editAddMode=false;
-    gotoViewDirect('scan');
-    $('modal').classList.add('open');
-    return;
+    showPreviewForEdit(c.toDataURL('image/jpeg',.92));
+  } else {
+    showPreview(c.toDataURL('image/jpeg',.92));
   }
-  const url=await captureFromVideo();if(!url)return;
-  const pg=await cropFlow(url);
-  if(pg){pages.push(pg);renderStrip()}
 });
 
 $('btn-gallery').addEventListener('click',()=>fi1.click());
@@ -424,33 +477,68 @@ $('btn-add-more').addEventListener('click',()=>fi1.click());
 
 fi1.addEventListener('change',async e=>{
   const files=[...e.target.files];e.target.value='';
-  for(const f of files){const url=await f2url(f);const pg=await cropFlow(url);if(pg){pages.push(pg)}}
-  renderStrip();
+  if(!files.length)return;
+  if(files.length===1){
+    const url=await f2url(files[0]);
+    showPreview(url);
+  } else {
+    // multiple files — add all directly (no individual preview for bulk)
+    setLoad(true,'Adding pages…');
+    for(const f of files){
+      const url=await f2url(f);
+      const thumb=await mkThumb(url);
+      pages.push({dataUrl:url,thumb});
+    }
+    setLoad(false);
+    renderStrip();
+    gotoView('scan');
+  }
 });
 
-// ── CROP FLOW ────────────────────────────────────────────────────
-// Returns {dataUrl, thumb} or null if cancelled
-function cropFlow(dataUrl){
-  return new Promise(async resolve=>{
-    const img=await loadImg(dataUrl);
-    const wrap=$('crop-wrap');
-    const canvas=$('crop-canvas');
-    const maxW=wrap.clientWidth-20,maxH=wrap.clientHeight-20;
-    const scale=Math.min(maxW/img.width,maxH/img.height,1);
-    const dw=Math.round(img.width*scale),dh=Math.round(img.height*scale);
-    canvas.width=dw;canvas.height=dh;
+// Preview screen buttons
+$('btn-retake').addEventListener('click',()=>{pendingDataUrl=null;gotoView('scan')});
 
-    // full-res source
-    const srcCanvas=document.createElement('canvas');
-    srcCanvas.width=img.width;srcCanvas.height=img.height;
-    srcCanvas.getContext('2d').drawImage(img,0,0);
+$('btn-use-as-is').addEventListener('click',async()=>{
+  if(!pendingDataUrl)return;
+  const url=pendingDataUrl;pendingDataUrl=null;
+  const thumb=await mkThumb(url);
+  pages.push({dataUrl:url,thumb});
+  renderStrip();
+  gotoView('scan');
+});
 
-    let pts=[[0,0],[dw,0],[dw,dh],[0,dh]];
-    cropCb={srcCanvas,scale,pts,resolve,img,dw,dh};
-    drawCrop(canvas,img,pts,dw,dh);
-    setupCropGestures(canvas,img,pts,dw,dh);
-    gotoViewDirect('crop');
+$('btn-do-crop').addEventListener('click',()=>{
+  if(!pendingDataUrl)return;
+  const url=pendingDataUrl;pendingDataUrl=null;
+  openCropView(url,result=>{
+    if(result){pages.push(result);renderStrip()}
+    gotoView('scan');
   });
+});
+
+// ── CROP VIEW ────────────────────────────────────────────────────
+async function openCropView(dataUrl, cb){
+  cropResolve=cb;
+  const img=await loadImg(dataUrl);
+  const wrap=$('crop-wrap');
+  const canvas=$('crop-canvas');
+
+  // Wait for layout
+  await new Promise(r=>requestAnimationFrame(r));
+  const maxW=wrap.clientWidth-20,maxH=wrap.clientHeight-20;
+  const scale=Math.min(maxW/img.width,maxH/img.height,1);
+  const dw=Math.round(img.width*scale),dh=Math.round(img.height*scale);
+  canvas.width=dw;canvas.height=dh;
+
+  const srcCanvas=document.createElement('canvas');
+  srcCanvas.width=img.width;srcCanvas.height=img.height;
+  srcCanvas.getContext('2d').drawImage(img,0,0);
+
+  const pts=[[0,0],[dw,0],[dw,dh],[0,dh]];
+  cropCb={srcCanvas,scale,img,pts,dw,dh};
+  drawCrop(canvas,img,pts,dw,dh);
+  setupCropGestures(canvas,img,pts,dw,dh);
+  gotoViewOnly('crop');
 }
 
 function drawCrop(canvas,img,pts,dw,dh){
@@ -466,15 +554,14 @@ function drawCrop(canvas,img,pts,dw,dh){
   ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
   pts.forEach(p=>ctx.lineTo(p[0],p[1]));ctx.lineTo(pts[0][0],pts[0][1]);ctx.stroke();
   pts.forEach(p=>{
-    ctx.beginPath();ctx.arc(p[0],p[1],11,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(p[0],p[1],12,0,Math.PI*2);
     ctx.fillStyle='rgba(191,143,62,.88)';ctx.fill();
     ctx.strokeStyle='rgba(240,208,144,.9)';ctx.lineWidth=1.5;ctx.stroke();
   });
 }
 
 function setupCropGestures(canvas,img,pts,dw,dh){
-  let active=-1;
-  const R=24;
+  let active=-1;const R=26;
   function getXY(e){const r=canvas.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return[t.clientX-r.left,t.clientY-r.top]}
   function nearest(x,y){let b=-1,bd=Infinity;pts.forEach(([px,py],i)=>{const d=Math.hypot(px-x,py-y);if(d<R&&d<bd){bd=d;b=i}});return b}
   function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v))}
@@ -502,39 +589,25 @@ $('btn-crop-reset').addEventListener('click',()=>{
   drawCrop($('crop-canvas'),img,cropCb.pts,dw,dh);
 });
 
-$('btn-crop-skip').addEventListener('click',async()=>{
-  if(!cropCb)return;
-  const{srcCanvas,resolve}=cropCb;cropCb=null;
-  const url=srcCanvas.toDataURL('image/jpeg',.88);
-  const thumb=await mkThumb(url);
-  backFromCrop();resolve({dataUrl:url,thumb});
+$('btn-crop-cancel').addEventListener('click',()=>{
+  const cb=cropResolve;cropCb=null;cropResolve=null;
+  gotoView('scan');
+  if(cb)cb(null);
 });
 
 $('btn-crop-ok').addEventListener('click',async()=>{
   if(!cropCb)return;
-  const{srcCanvas,pts,scale,resolve}=cropCb;cropCb=null;
+  const{srcCanvas,pts,scale}=cropCb;
+  const cb=cropResolve;cropCb=null;cropResolve=null;
+  setLoad(true,'Warping…');
+  await new Promise(r=>setTimeout(r,30));
   const srcPts=pts.map(([x,y])=>[x/scale,y/scale]);
-  setLoad(true,'Warping…');await new Promise(r=>setTimeout(r,30));
   const warped=warpCanvas(srcCanvas,srcPts);
   const url=warped.toDataURL('image/jpeg',.88);
   const thumb=await mkThumb(url);
   setLoad(false);
-  backFromCrop();resolve({dataUrl:url,thumb});
+  if(cb)cb({dataUrl:url,thumb});
 });
-
-$('btn-crop-cancel').addEventListener('click',()=>{
-  if(!cropCb)return;
-  const{resolve}=cropCb;cropCb=null;
-  backFromCrop();resolve(null);
-});
-
-function backFromCrop(){
-  if($('modal').classList.contains('open')){
-    gotoViewDirect('scan');
-  } else {
-    gotoView('scan');
-  }
-}
 
 // ── PAGE STRIP ───────────────────────────────────────────────────
 function renderStrip(){
@@ -545,10 +618,14 @@ function renderStrip(){
     const d=document.createElement('div');
     d.className='sthumb';d.draggable=true;d.dataset.idx=i;
     d.innerHTML=`<img src="${pg.thumb}"><div class="pn">${i+1}</div><button class="dx">×</button>`;
+    // tap → preview
+    d.addEventListener('click',e=>{if(e.target.classList.contains('dx'))return;openPageViewer(i,false)});
+    // long press → show delete
     let lpt;
-    d.addEventListener('touchstart',()=>{lpt=setTimeout(()=>d.classList.toggle('sdel'),480)},{passive:true});
+    d.addEventListener('touchstart',()=>{lpt=setTimeout(()=>d.classList.toggle('sdel'),500)},{passive:true});
     d.addEventListener('touchend',()=>clearTimeout(lpt),{passive:true});
     d.querySelector('.dx').addEventListener('click',e=>{e.stopPropagation();pages.splice(i,1);renderStrip()});
+    // drag
     d.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',i);d.classList.add('dragging')});
     d.addEventListener('dragend',()=>d.classList.remove('dragging'));
     d.addEventListener('dragover',e=>{e.preventDefault();d.classList.add('drag-over')});
@@ -568,8 +645,47 @@ function renderStrip(){
   $('strip-lbl').textContent=`Pages (${pages.length})`;
   if(!$('doc-name').value)$('doc-name').value=defName();
 }
-
 $('btn-clear').addEventListener('click',()=>{if(!confirm('Clear all pages?'))return;pages=[];renderStrip()});
+
+// ── PAGE VIEWER ──────────────────────────────────────────────────
+function openPageViewer(idx, isEdit){
+  pvPageIdx=idx;
+  const pg=isEdit?editPages[idx]:pages[idx];
+  $('pv-img').src=pg.dataUrl;
+  $('pv-title').textContent=`Page ${idx+1} of ${isEdit?editPages.length:pages.length}`;
+  $('pv-crop').dataset.edit=isEdit?'1':'0';
+  $('pv-delete').dataset.edit=isEdit?'1':'0';
+  $('page-viewer').classList.add('open');
+}
+
+$('pv-close').addEventListener('click',()=>{$('page-viewer').classList.remove('open');pvPageIdx=-1});
+
+$('pv-delete').addEventListener('click',()=>{
+  if(pvPageIdx<0)return;
+  const isEdit=$('pv-delete').dataset.edit==='1';
+  if(isEdit){editPages.splice(pvPageIdx,1);renderEditStrip()}
+  else{pages.splice(pvPageIdx,1);renderStrip()}
+  $('page-viewer').classList.remove('open');pvPageIdx=-1;
+});
+
+$('pv-crop').addEventListener('click',()=>{
+  if(pvPageIdx<0)return;
+  const isEdit=$('pv-crop').dataset.edit==='1';
+  const pg=isEdit?editPages[pvPageIdx]:pages[pvPageIdx];
+  const idx=pvPageIdx;
+  $('page-viewer').classList.remove('open');pvPageIdx=-1;
+  if(isEdit){
+    openCropView(pg.dataUrl,result=>{
+      if(result){editPages[idx]=result;renderEditStrip()}
+      gotoViewOnly('scan');$('modal').classList.add('open');
+    });
+  } else {
+    openCropView(pg.dataUrl,result=>{
+      if(result)pages[idx]=result;
+      renderStrip();gotoView('scan');
+    });
+  }
+});
 
 // ── BUILD PDF ────────────────────────────────────────────────────
 async function buildPDF(pgList){
@@ -612,7 +728,7 @@ async function renderLib(q=''){
   }
   docs.forEach(doc=>{
     const div=document.createElement('div');div.className='doc-item';
-    div.innerHTML=`<div class="dthumb">${doc.thumb?`<img src="${doc.thumb}">`:''}</div><div class="dmeta"><div class="dname">${esc(doc.name)}</div><div class="dinfo">${fmtDate(doc.createdAt)} · ${doc.pageCount}p · ${fmtB(doc.size)}</div></div><div class="dacts"><button class="iBtn dl" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button class="iBtn ed" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iBtn rm" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div>`;
+    div.innerHTML=`<div class="dthumb">${doc.thumb?`<img src="${doc.thumb}">`:''}</div><div class="dmeta"><div class="dname">${esc(doc.name)}</div><div class="dinfo">${fmtDate(doc.createdAt)} · ${doc.pageCount}p · ${fmtB(doc.size)}</div></div><div class="dacts"><button class="iBtn dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button class="iBtn ed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="iBtn rm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div>`;
     div.querySelector('.dl').addEventListener('click',e=>{e.stopPropagation();dlDoc(doc.id)});
     div.querySelector('.ed').addEventListener('click',e=>{e.stopPropagation();openEdit(doc.id)});
     div.querySelector('.rm').addEventListener('click',e=>{e.stopPropagation();rmDoc(doc.id,doc.name)});
@@ -621,7 +737,6 @@ async function renderLib(q=''){
   });
 }
 $('srch-in').addEventListener('input',e=>renderLib(e.target.value));
-
 async function dlDoc(id){const doc=await dbGet(id);if(!doc)return;dlBlob(new Blob([doc.pdf],{type:'application/pdf'}),doc.name+'.pdf');toast('Downloaded','ok')}
 async function rmDoc(id,name){if(!confirm(`Delete "${name}"?`))return;await dbDel(id);toast('Deleted');renderLib($('srch-in').value);updCount()}
 
@@ -648,7 +763,7 @@ async function openEdit(id){
   const doc=await dbGet(id);if(!doc)return;
   editDoc=doc;
   setLoad(true,'Loading pages…');
-  try{editPages=await pdfToImages(doc.pdf)}catch{editPages=[]}
+  try{editPages=await pdfToImages(doc.pdf)}catch(e){editPages=[];console.error(e)}
   setLoad(false);
   $('modal-title').textContent=doc.name;
   $('modal-name').value=doc.name;
@@ -660,8 +775,9 @@ async function openEdit(id){
 function renderEditStrip(){
   const strip=$('edit-strip');strip.innerHTML='';
   editPages.forEach((pg,i)=>{
-    const d=document.createElement('div');d.className='ethumb';d.draggable=true;d.dataset.idx=i;
+    const d=document.createElement('div');d.className='ethumb';d.draggable=true;
     d.innerHTML=`<img src="${pg.thumb}"><div class="pn">${i+1}</div><button class="dx">×</button>`;
+    d.addEventListener('click',e=>{if(e.target.classList.contains('dx'))return;openPageViewer(i,true)});
     d.querySelector('.dx').addEventListener('click',e=>{e.stopPropagation();editPages.splice(i,1);renderEditStrip()});
     d.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',i);d.classList.add('dragging')});
     d.addEventListener('dragend',()=>d.classList.remove('dragging'));
@@ -676,27 +792,29 @@ function renderEditStrip(){
   });
 }
 
-// add camera from modal
+function showPreviewForEdit(dataUrl){
+  pendingDataUrl=dataUrl;
+  $('preview-img').src=dataUrl;
+  // swap preview buttons for edit mode
+  $('btn-use-as-is').textContent='Add Page';
+  gotoViewOnly('preview');
+}
+
 $('m-add-cam').addEventListener('click',()=>{
   $('modal').classList.remove('open');
   editAddMode=true;
   gotoView('scan');
 });
-
-// add gallery from modal
 $('m-add-gal').addEventListener('click',()=>fi2.click());
 fi2.addEventListener('change',async e=>{
   const files=[...e.target.files];e.target.value='';
   for(const f of files){
     const url=await f2url(f);
-    const pg=await cropFlow(url);
-    if(pg)editPages.push(pg);
+    const thumb=await mkThumb(url);
+    editPages.push({dataUrl:url,thumb});
   }
   renderEditStrip();
-  if(!$('crop-view').classList.contains('active'))$('modal').classList.add('open');
 });
-
-// add PDF pages from modal
 $('m-add-pdf').addEventListener('click',()=>fi3.click());
 fi3.addEventListener('change',async e=>{
   const file=e.target.files[0];e.target.value='';if(!file)return;
@@ -704,6 +822,40 @@ fi3.addEventListener('change',async e=>{
   try{const ab=await file.arrayBuffer();const pgs=await pdfToImages(new Uint8Array(ab));editPages.push(...pgs)}
   catch{toast('Could not load PDF','err')}
   setLoad(false);renderEditStrip();
+});
+
+// Handle shutter in edit-add-mode: after preview, "Add Page" should go to editPages
+const origUseAsIs=$('btn-use-as-is').cloneNode(true);
+$('btn-use-as-is').addEventListener('click',async()=>{
+  if(!pendingDataUrl)return;
+  const url=pendingDataUrl;pendingDataUrl=null;
+  const thumb=await mkThumb(url);
+  if(editAddMode){
+    editPages.push({dataUrl:url,thumb});
+    renderEditStrip();
+    editAddMode=false;
+    gotoViewOnly('scan');
+    $('modal').classList.add('open');
+  } else {
+    pages.push({dataUrl:url,thumb});
+    renderStrip();
+    gotoView('scan');
+  }
+});
+$('btn-do-crop').addEventListener('click',()=>{
+  if(!pendingDataUrl)return;
+  const url=pendingDataUrl;pendingDataUrl=null;
+  const isEdit=editAddMode;
+  if(isEdit)editAddMode=false;
+  openCropView(url,result=>{
+    if(result){
+      if(isEdit){editPages.push(result);renderEditStrip();gotoViewOnly('scan');$('modal').classList.add('open')}
+      else{pages.push(result);renderStrip();gotoView('scan')}
+    } else {
+      if(isEdit){gotoViewOnly('scan');$('modal').classList.add('open')}
+      else gotoView('scan');
+    }
+  });
 });
 
 $('modal-close').addEventListener('click',()=>{$('modal').classList.remove('open');editDoc=null;editPages=[];editAddMode=false});
@@ -727,14 +879,20 @@ $('modal-save').addEventListener('click',async()=>{
     setLoad(false);toast('Saved & downloaded','ok');
     $('modal').classList.remove('open');editDoc=null;editPages=[];
     renderLib($('srch-in').value);updCount();
-  }catch(e){setLoad(false);toast('Error: '+e.message,'err')}
+  }catch(e){setLoad(false);toast('Error: '+e.message,'err');console.error(e)}
 });
 
 // ── SERVICE WORKER ───────────────────────────────────────────────
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.warn));
+}
 
 // ── INIT ─────────────────────────────────────────────────────────
-(async()=>{await openDB();await updCount();startCam()})();
+(async()=>{
+  try{await openDB()}catch(e){console.error('DB error:',e)}
+  await updCount();
+  await startCam();
+})();
 </script>
 </body>
 </html>
