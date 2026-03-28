@@ -172,6 +172,7 @@ nav button:active{opacity:.6}
 #loading.show{display:flex}
 .spinner{width:32px;height:32px;border:2.5px solid var(--br);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes focusfade{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.4)}}
 
 #fi1,#fi2,#fi3{display:none}
 </style>
@@ -447,13 +448,25 @@ async function startCam(){
   const vid=$('cam-video'),nc=$('no-cam'),cb=$('cam-btns');
   if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
   try{
+    // No resolution constraints — let camera run in its natural default mode
+    // so the hardware ISP handles autofocus, exposure, noise reduction natively
     camStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:camFacing,width:{ideal:4096},height:{ideal:2160}},audio:false
+      video:{facingMode:camFacing},audio:false
     });
     vid.srcObject=camStream;
     vid.style.display='block';
+    setupTapToFocus(vid);
     nc.style.display='none';
     cb.style.display='flex';
+
+    // Request continuous autofocus if supported (Chrome Android)
+    const track=camStream.getVideoTracks()[0];
+    if(track){
+      const caps=track.getCapabilities?.();
+      if(caps?.focusMode?.includes('continuous')){
+        await track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+      }
+    }
   }catch(e){
     console.warn('Camera error:',e);
     vid.style.display='none';
@@ -461,6 +474,26 @@ async function startCam(){
     cb.style.display='none';
   }
 }
+
+// Tap-to-focus on the video element
+function setupTapToFocus(vid){
+  vid.addEventListener('click',async e=>{
+    const track=camStream?.getVideoTracks()[0];
+    if(!track) return;
+    const caps=track.getCapabilities?.();
+    if(!caps?.pointsOfInterest) return;
+    const r=vid.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width;
+    const y=(e.clientY-r.top)/r.height;
+    await track.applyConstraints({advanced:[{pointsOfInterest:[{x,y}],focusMode:'single-shot'}]}).catch(()=>{});
+    // flash focus indicator
+    const dot=document.createElement('div');
+    dot.style.cssText=`position:fixed;left:${e.clientX-18}px;top:${e.clientY-18}px;width:36px;height:36px;border:2px solid rgba(212,170,96,.9);border-radius:50%;pointer-events:none;z-index:99;animation:focusfade .6s ease forwards`;
+    document.body.appendChild(dot);
+    setTimeout(()=>dot.remove(),650);
+  });
+}
+
 function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}}
 $('btn-flip').addEventListener('click',()=>{camFacing=camFacing==='environment'?'user':'environment';startCam()});
 
